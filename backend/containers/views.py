@@ -14,8 +14,17 @@ class ContainerViewSet(viewsets.ViewSet):
     def get_client(self):
         try:
             return docker.from_env()
-        except Exception as e:
-            # Fallback for Windows if needed, but spec says unix socket
+        except Exception:
+            import platform
+            if platform.system() == "Windows":
+                # Try common Windows pipes
+                for pipe in ['npipe:////./pipe/docker_engine', 'npipe:////./pipe/dockerDesktopLinuxEngine']:
+                    try:
+                        client = docker.DockerClient(base_url=pipe)
+                        client.ping()
+                        return client
+                    except:
+                        continue
             return docker.DockerClient(base_url='unix://var/run/docker.sock')
 
     def list(self, request):
@@ -120,7 +129,17 @@ class ImageViewSet(viewsets.ViewSet):
     def get_client(self):
         try:
             return docker.from_env()
-        except:
+        except Exception:
+            import platform
+            if platform.system() == "Windows":
+                # Try common Windows pipes
+                for pipe in ['npipe:////./pipe/docker_engine', 'npipe:////./pipe/dockerDesktopLinuxEngine']:
+                    try:
+                        client = docker.DockerClient(base_url=pipe)
+                        client.ping()
+                        return client
+                    except:
+                        continue
             return docker.DockerClient(base_url='unix://var/run/docker.sock')
 
     def list(self, request):

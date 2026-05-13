@@ -2,15 +2,38 @@
 
 import { useState } from "react";
 import { Lock, User, ArrowRight, ShieldCheck } from "lucide-react";
+import { API_BASE_URL } from "@/lib/api";
 
 export default function LoginPage() {
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    // Future login logic
-    setTimeout(() => (window.location.href = "/dashboard"), 1500);
+    setError("");
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/token/`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        localStorage.setItem('token', data.access);
+        window.location.href = "/dashboard";
+      } else {
+        setError("Invalid username or password");
+      }
+    } catch (err) {
+      setError("Unable to connect to backend server");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -30,6 +53,11 @@ export default function LoginPage() {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
+            {error && (
+              <div className="bg-rose-500/10 border border-rose-500/20 text-rose-500 text-xs py-2 px-3 rounded-lg text-center font-medium">
+                {error}
+              </div>
+            )}
             <div className="space-y-2">
               <label className="text-sm font-medium text-zinc-400 ml-1">Username</label>
               <div className="relative group">
@@ -38,6 +66,8 @@ export default function LoginPage() {
                   type="text" 
                   placeholder="admin" 
                   className="w-full bg-white/5 border border-white/10 rounded-2xl py-3.5 pl-12 pr-4 focus:outline-none focus:border-accent-primary/50 focus:ring-1 focus:ring-accent-primary/50 transition-all"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
                   required
                 />
               </div>
@@ -51,6 +81,8 @@ export default function LoginPage() {
                   type="password" 
                   placeholder="••••••••" 
                   className="w-full bg-white/5 border border-white/10 rounded-2xl py-3.5 pl-12 pr-4 focus:outline-none focus:border-accent-primary/50 focus:ring-1 focus:ring-accent-primary/50 transition-all"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                   required
                 />
               </div>
