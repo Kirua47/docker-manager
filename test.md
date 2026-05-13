@@ -2,7 +2,7 @@
 
 Ce document recense l'ensemble des tests unitaires à implémenter pour le projet d'orchestrateur Docker personnel. Dans le cadre d'une approche TDD (Test-Driven Development), ces tests devront être écrits *avant* l'implémentation des fonctionnalités correspondantes.
 
-## 1. Backend (FastAPI + Pytest)
+## 1. Backend (Django + Django REST Framework)
 
 Les tests backend simuleront (mock) les interactions avec le socket Unix `/var/run/docker.sock` pour ne pas impacter le système hôte lors de l'exécution des tests.
 
@@ -74,5 +74,5 @@ Les tests frontend vérifieront le rendu des composants et les interactions util
 
 Pour chaque fonctionnalité (ex: Lister les containers) :
 1. **Red** : Écrire le test unitaire (Backend ou Frontend) qui décrit le comportement attendu. Lancer le test, il doit échouer.
-2. **Green** : Écrire le code minimal nécessaire (FastAPI ou React) pour faire passer le test.
-3. **Refactor** : Nettoyer le code, optimiser (gestion d'erreurs, typage avec Pydantic/TypeScript, styles Tailwind) tout en s'assurant que le test reste vert.
+2. **Green** : Écrire le code minimal nécessaire (Django/DRF ou React) pour faire passer le test.
+3. **Refactor** : Nettoyer le code, optimiser (gestion d'erreurs, sérialiseurs, styles Tailwind) tout en s'assurant que le test reste vert.
