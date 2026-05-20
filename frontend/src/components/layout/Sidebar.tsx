@@ -1,30 +1,8 @@
 "use client";
 
+import React from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { 
-  LayoutDashboard, 
-  Box, 
-  Layers, 
-  Settings, 
-  LogOut,
-  Terminal,
-  HardDrive
-} from "lucide-react";
-import { clsx, type ClassValue } from "clsx";
-import { twMerge } from "tailwind-merge";
-
-function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
-}
-
-const navItems = [
-  { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { name: "Containers", href: "/containers", icon: Box },
-  { name: "Images", href: "/images", icon: Layers },
-  { name: "Volumes", href: "/volumes", icon: HardDrive },
-  { name: "Logs", href: "/logs", icon: Terminal },
-];
 
 export default function Sidebar() {
   const pathname = usePathname();
@@ -35,46 +13,55 @@ export default function Sidebar() {
     router.push("/login");
   };
 
+  const navItems = [
+    { name: "Dashboard", href: "/dashboard", icon: "dashboard" },
+    { name: "Containers", href: "/containers", icon: "view_in_ar" },
+    { name: "Images", href: "/images", icon: "layers" },
+    { name: "Volumes", href: "/volumes", icon: "storage" },
+    { name: "Logs", href: "/logs", icon: "terminal" },
+    { name: "Settings", href: "/settings", icon: "settings" },
+  ];
+
+  const getLinkClasses = (href: string) => {
+    const isActive = pathname === href || pathname?.startsWith(`${href}/`);
+    if (isActive) {
+      return "flex items-center gap-md px-md py-sm rounded bg-secondary-container text-primary border-l-4 border-primary cursor-pointer active:opacity-80 transition-colors";
+    }
+    return "flex items-center gap-md px-md py-sm rounded text-on-surface-variant hover:bg-surface-container-high transition-colors cursor-pointer active:opacity-80 border-l-4 border-transparent";
+  };
+
   return (
-    <aside className="fixed left-0 top-0 z-40 h-screen w-64 glass border-r border-white/10 flex flex-col">
-      <div className="p-6">
-        <h1 className="text-xl font-bold bg-gradient-to-r from-accent-primary to-accent-secondary bg-clip-text text-transparent">
-          Docker Manager
-        </h1>
+    <nav className="hidden md:flex flex-col w-sidebar_width h-full px-md py-lg bg-background border-r border-outline-variant fixed left-0 top-0 z-20">
+      <div className="mb-xl flex items-center gap-sm">
+        <span className="material-symbols-outlined text-primary text-3xl" data-weight="fill">token</span>
+        <div>
+          <div className="font-headline-md text-headline-md font-bold text-primary">Docker Console</div>
+          <div className="font-body-sm text-body-sm text-on-surface-variant">v2.4.0-stable</div>
+        </div>
       </div>
 
-      <nav className="flex-1 px-4 space-y-2 mt-4">
-        {navItems.map((item) => {
-          const isActive = pathname === item.href;
-          return (
-            <Link
-              key={item.name}
-              href={item.href}
-              className={cn(
-                "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group",
-                isActive 
-                  ? "bg-white/10 text-accent-primary border border-white/10 shadow-lg" 
-                  : "text-zinc-400 hover:text-white hover:bg-white/5"
-              )}
-            >
-              <item.icon className={cn(
-                "w-5 h-5 transition-transform duration-200 group-hover:scale-110",
-                isActive && "text-accent-primary"
-              )} />
-              <span className="font-medium">{item.name}</span>
-            </Link>
-          );
-        })}
-      </nav>
-
-      <div className="p-4 mt-auto border-t border-white/10">
-        <button 
-          onClick={handleLogout}
-          className="flex items-center gap-3 px-4 py-3 w-full rounded-xl text-zinc-400 hover:text-rose-400 hover:bg-rose-500/10 transition-colors group">
-          <LogOut className="w-5 h-5 group-hover:rotate-12 transition-transform" />
-          <span className="font-medium">Logout</span>
-        </button>
+      <div className="flex-grow flex flex-col gap-sm overflow-y-auto">
+        {navItems.map((item) => (
+          <Link key={item.name} href={item.href} className={getLinkClasses(item.href)}>
+            <span className="material-symbols-outlined">{item.icon}</span>
+            <span className="font-title-sm text-title-sm">{item.name}</span>
+          </Link>
+        ))}
       </div>
-    </aside>
+
+      <div className="mt-auto pt-lg border-t border-outline-variant flex flex-col gap-sm">
+        <a className="flex items-center gap-md px-md py-sm rounded text-on-surface-variant hover:bg-surface-container-high transition-colors cursor-pointer active:opacity-80" href="#">
+          <span className="material-symbols-outlined">description</span>
+          <span className="font-title-sm text-title-sm">Documentation</span>
+        </a>
+        <a className="flex items-center gap-md px-md py-sm rounded text-on-surface-variant hover:bg-surface-container-high transition-colors cursor-pointer active:opacity-80" href="#">
+          <span className="material-symbols-outlined">help</span>
+          <span className="font-title-sm text-title-sm">Support</span>
+        </a>
+        <Link href="/containers/create" className="mt-md w-full bg-primary text-on-primary py-sm rounded font-title-sm text-title-sm hover:bg-primary-container hover:text-on-primary-container transition-colors shadow-sm text-center block">
+          Deploy New
+        </Link>
+      </div>
+    </nav>
   );
 }
