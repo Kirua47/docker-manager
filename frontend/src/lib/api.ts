@@ -23,6 +23,8 @@ export async function apiFetch(endpoint: string, options: RequestInit = {}) {
       localStorage.removeItem('token');
       window.location.href = '/login';
     }
+    // Return a never-resolving promise to block downstream execution and prevent crash overlays during redirect
+    return new Promise(() => {}) as unknown as Promise<Response>;
   }
 
   return response;
@@ -102,5 +104,31 @@ export const imageService = {
       throw new Error(error.error || 'Failed to pull image');
     }
     return res.json();
+  }
+};
+
+export const volumeService = {
+  list: async () => {
+    const res = await apiFetch('/volumes/');
+    if (!res.ok) throw new Error('Failed to fetch volumes');
+    return res.json();
+  },
+
+  create: async (name: string) => {
+    const res = await apiFetch('/volumes/', {
+      method: 'POST',
+      body: JSON.stringify({ name }),
+    });
+    if (!res.ok) {
+      const error = await res.json();
+      throw new Error(error.error || 'Failed to create volume');
+    }
+    return res.json();
+  },
+
+  delete: async (id: string) => {
+    const res = await apiFetch(`/volumes/${id}/`, { method: 'DELETE' });
+    if (!res.ok) throw new Error('Failed to delete volume');
+    return true;
   }
 };

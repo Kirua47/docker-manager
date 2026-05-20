@@ -59,7 +59,7 @@ export default function ContainersPage() {
     }
   };
 
-  const handleCreate = async (data: { name: string; image: string }) => {
+  const handleCreate = async (data: { name: string; image: string; ports?: any; volumes?: any }) => {
     try {
       await containerService.create(data);
       setIsCreateOpen(false);

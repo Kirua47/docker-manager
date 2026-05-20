@@ -8,7 +8,8 @@ import {
   Layers, 
   Settings, 
   LogOut,
-  Terminal
+  Terminal,
+  HardDrive
 } from "lucide-react";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
@@ -21,6 +22,7 @@ const navItems = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { name: "Containers", href: "/containers", icon: Box },
   { name: "Images", href: "/images", icon: Layers },
+  { name: "Volumes", href: "/volumes", icon: HardDrive },
   { name: "Logs", href: "/logs", icon: Terminal },
 ];
 

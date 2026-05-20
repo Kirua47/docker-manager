@@ -1,18 +1,82 @@
 "use client";
 
-import { useState } from "react";
-import { Search, Download, Layers, ShieldCheck, Clock, ExternalLink } from "lucide-react";
-
-const MOCK_IMAGES = [
-  { name: "nginx", tag: "latest", size: "142MB", pulled: "2 days ago", official: true },
-  { name: "postgres", tag: "15-alpine", size: "230MB", pulled: "5 days ago", official: true },
-  { name: "redis", tag: "7.0", size: "110MB", pulled: "1 week ago", official: true },
-  { name: "traefik", tag: "v2.9", size: "85MB", pulled: "3 days ago", official: true },
-  { name: "node", tag: "18-slim", size: "180MB", pulled: "Just now", official: true },
-];
+import { useState, useEffect } from "react";
+import { Search, Download, Layers, ShieldCheck, Clock, ExternalLink, Loader2, Trash2, Box } from "lucide-react";
+import { imageService } from "@/lib/api";
 
 export default function ImagesPage() {
   const [search, setSearch] = useState("");
+  const [images, setImages] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [isPulling, setIsPulling] = useState(false);
+
+  const fetchImages = async () => {
+    try {
+      setLoading(true);
+      const data = await imageService.list();
+      setImages(data);
+    } catch (err) {
+      setError("Failed to load images.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchImages();
+  }, []);
+
+  const handlePull = async () => {
+    if (!search.trim()) return;
+    try {
+      setIsPulling(true);
+      await imageService.pull(search.trim());
+      setSearch("");
+      await fetchImages();
+    } catch (err: any) {
+      alert(`Failed to pull image: ${err.message}`);
+    } finally {
+      setIsPulling(false);
+    }
+  };
+
+  const formatSize = (bytes: number) => {
+    if (!bytes) return "0 B";
+    const k = 1024;
+    const sizes = ["B", "KB", "MB", "GB", "TB"];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + " " + sizes[i];
+  };
+
+  const formatDate = (isoString: string) => {
+    if (!isoString) return "Unknown";
+    return new Date(isoString).toLocaleDateString(undefined, {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  };
+
+  const parseTag = (tags: string[]) => {
+    if (!tags || tags.length === 0) return { name: "<none>", tag: "<none>" };
+    const firstTag = tags[0];
+    const parts = firstTag.split(":");
+    return {
+      name: parts[0] || "<none>",
+      tag: parts[1] || "latest"
+    };
+  };
+
+  const parseId = (id: string) => {
+    return id.replace("sha256:", "").substring(0, 12);
+  };
+
+  const filteredImages = images.filter(img => {
+    const { name, tag } = parseTag(img.tags);
+    return name.toLowerCase().includes(search.toLowerCase()) || 
+           tag.toLowerCase().includes(search.toLowerCase());
+  });
 
   return (
     <div className="space-y-8 animate-in fade-in duration-700">
@@ -27,15 +91,20 @@ export default function ImagesPage() {
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" />
             <input 
               type="text" 
-              placeholder="Search Docker Hub (e.g. mysql, python, rust...)" 
+              placeholder="Search local images or enter image to pull (e.g. mysql)..." 
               className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-12 pr-4 focus:outline-none focus:border-accent-primary transition-all"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handlePull()}
             />
           </div>
-          <button className="w-full sm:w-auto bg-white text-zinc-950 font-bold px-8 py-4 rounded-2xl flex items-center justify-center gap-2 transition-all hover:bg-zinc-200 active:scale-95">
-            <Download className="w-5 h-5" />
-            <span>Pull Image</span>
+          <button 
+            onClick={handlePull}
+            disabled={isPulling || !search.trim()}
+            className="w-full sm:w-auto bg-white text-zinc-950 font-bold px-8 py-4 rounded-2xl flex items-center justify-center gap-2 transition-all hover:bg-zinc-200 active:scale-95 disabled:opacity-50 disabled:pointer-events-none"
+          >
+            {isPulling ? <Loader2 className="w-5 h-5 animate-spin" /> : <Download className="w-5 h-5" />}
+            <span>{isPulling ? "Pulling..." : "Pull Image"}</span>
           </button>
         </div>
 
@@ -45,85 +114,55 @@ export default function ImagesPage() {
               <Layers className="w-5 h-5 text-accent-secondary" />
               Local Images
             </h3>
-            <span className="text-xs text-zinc-500 font-mono">{MOCK_IMAGES.length} TOTAL IMAGES</span>
+            <span className="text-xs text-zinc-500 font-mono">{filteredImages.length} TOTAL IMAGES</span>
           </div>
 
-          <div className="grid grid-cols-1 gap-4">
-            {MOCK_IMAGES.map((image, i) => (
-              <div key={i} className="glass bg-white/5 border-white/5 rounded-2xl p-4 flex items-center justify-between group hover:bg-white/10 transition-all">
-                <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-xl bg-zinc-800 flex items-center justify-center text-zinc-400 group-hover:text-accent-primary transition-colors">
-                    <Box className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-bold text-white">{image.name}</span>
-                      <span className="text-xs px-2 py-0.5 rounded-md bg-zinc-800 text-zinc-400 font-mono">{image.tag}</span>
-                      {image.official && <ShieldCheck className="w-3.5 h-3.5 text-blue-400" title="Official Image" />}
+          {loading ? (
+            <div className="flex flex-col items-center justify-center py-20 text-zinc-500">
+              <Loader2 className="w-10 h-10 animate-spin mb-4 opacity-20" />
+              <p>Loading images...</p>
+            </div>
+          ) : error ? (
+            <div className="text-center py-10 text-rose-500">{error}</div>
+          ) : (
+            <div className="grid grid-cols-1 gap-4">
+              {filteredImages.map((image, i) => {
+                const { name, tag } = parseTag(image.tags);
+                return (
+                  <div key={i} className="glass bg-white/5 border-white/5 rounded-2xl p-4 flex items-center justify-between group hover:bg-white/10 transition-all">
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 rounded-xl bg-zinc-800 flex items-center justify-center text-zinc-400 group-hover:text-accent-primary transition-colors">
+                        <Box className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-white">{name}</span>
+                          <span className="text-xs px-2 py-0.5 rounded-md bg-zinc-800 text-zinc-400 font-mono">{tag}</span>
+                          <span className="text-xs text-zinc-500 font-mono bg-white/5 px-2 py-0.5 rounded-md ml-2" title="Short ID">{parseId(image.id)}</span>
+                        </div>
+                        <div className="flex items-center gap-4 mt-1 text-xs text-zinc-500">
+                          <span className="flex items-center gap-1" title="Created At"><Clock className="w-3 h-3" /> {formatDate(image.created)}</span>
+                          <span title="Size">{formatSize(image.size)}</span>
+                        </div>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-4 mt-1 text-xs text-zinc-500">
-                      <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {image.pulled}</span>
-                      <span>{image.size}</span>
+                    <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button className="p-2 hover:bg-rose-500/20 rounded-lg text-rose-500 transition-colors">
+                        <Trash2 className="w-4 h-4" />
+                      </button>
                     </div>
                   </div>
+                );
+              })}
+              {filteredImages.length === 0 && (
+                <div className="py-20 text-center glass rounded-3xl border-dashed">
+                  <p className="text-zinc-500">No images found.</p>
                 </div>
-                <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button className="p-2 hover:bg-white/10 rounded-lg text-zinc-400 hover:text-white transition-colors">
-                    <ExternalLink className="w-4 h-4" />
-                  </button>
-                  <button className="p-2 hover:bg-rose-500/20 rounded-lg text-rose-500 transition-colors">
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>
-  );
-}
-
-function Box({ className }: { className?: string }) {
-  return (
-    <svg 
-      xmlns="http://www.w3.org/2000/svg" 
-      width="24" 
-      height="24" 
-      viewBox="0 0 24 24" 
-      fill="none" 
-      stroke="currentColor" 
-      strokeWidth="2" 
-      strokeLinecap="round" 
-      strokeLinejoin="round" 
-      className={className}
-    >
-      <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z" />
-      <path d="m3.3 7 8.7 5 8.7-5" />
-      <path d="M12 22V12" />
-    </svg>
-  );
-}
-
-function Trash2({ className }: { className?: string }) {
-  return (
-    <svg 
-      xmlns="http://www.w3.org/2000/svg" 
-      width="24" 
-      height="24" 
-      viewBox="0 0 24 24" 
-      fill="none" 
-      stroke="currentColor" 
-      strokeWidth="2" 
-      strokeLinecap="round" 
-      strokeLinejoin="round" 
-      className={className}
-    >
-      <path d="M3 6h18" />
-      <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
-      <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
-      <line x1="10" x2="10" y1="11" y2="17" />
-      <line x1="14" x2="14" y1="11" y2="17" />
-    </svg>
   );
 }
