@@ -27,3 +27,13 @@ class ImageSearchSerializer(serializers.Serializer):
     description = serializers.CharField(allow_blank=True)
     is_official = serializers.BooleanField()
     star_count = serializers.IntegerField()
+
+class VolumeSerializer(serializers.Serializer):
+    name = serializers.CharField()
+    driver = serializers.CharField()
+    mountpoint = serializers.CharField()
+    created_at = serializers.CharField(required=False)
+
+class VolumeCreateSerializer(serializers.Serializer):
+    name = serializers.CharField(required=True)
+

@@ -7,7 +7,9 @@ from .serializers import (
     ContainerSerializer, 
     ContainerCreateSerializer, 
     ImageSerializer, 
-    ImageSearchSerializer
+    ImageSearchSerializer,
+    VolumeSerializer,
+    VolumeCreateSerializer
 )
 
 class ContainerViewSet(viewsets.ViewSet):
@@ -179,5 +181,57 @@ class ImageViewSet(viewsets.ViewSet):
             return Response({'status': f'Pulled {image_name}', 'id': image.id})
         except docker.errors.NotFound:
             return Response({'error': 'Image not found'}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+class VolumeViewSet(viewsets.ViewSet):
+    def get_client(self):
+        try:
+            return docker.from_env()
+        except Exception:
+            import platform
+            if platform.system() == "Windows":
+                for pipe in ['npipe:////./pipe/docker_engine', 'npipe:////./pipe/dockerDesktopLinuxEngine']:
+                    try:
+                        client = docker.DockerClient(base_url=pipe)
+                        client.ping()
+                        return client
+                    except:
+                        continue
+            return docker.DockerClient(base_url='unix://var/run/docker.sock')
+
+    def list(self, request):
+        client = self.get_client()
+        volumes = client.volumes.list()
+        data = []
+        for vol in volumes:
+            data.append({
+                'name': vol.name,
+                'driver': vol.attrs.get('Driver', ''),
+                'mountpoint': vol.attrs.get('Mountpoint', ''),
+                'created_at': vol.attrs.get('CreatedAt', '')
+            })
+        serializer = VolumeSerializer(data, many=True)
+        return Response(serializer.data)
+
+    def create(self, request):
+        serializer = VolumeCreateSerializer(data=request.data)
+        if serializer.is_valid():
+            client = self.get_client()
+            try:
+                volume = client.volumes.create(name=serializer.validated_data['name'])
+                return Response({'name': volume.name}, status=status.HTTP_201_CREATED)
+            except Exception as e:
+                return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(serializer.errors, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
+
+    def destroy(self, request, pk=None):
+        client = self.get_client()
+        try:
+            volume = client.volumes.get(pk)
+            volume.remove(force=True)
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        except docker.errors.NotFound:
+            return Response(status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
