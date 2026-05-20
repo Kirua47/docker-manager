@@ -168,3 +168,18 @@ La page des images affichait initialement des fausses données (mock). Elle a é
 ### 4. Amélioration de la Gestion de l'Expiration de Session (401 Unauthorized)
 Lorsque le token d'authentification est manquant ou expiré, l'application tente de rediriger l'utilisateur vers la page de connexion (`/login`). Cependant, un bug subsistait : avant que le navigateur n'ait eu le temps de s'exécuter, une erreur ("Failed to fetch containers") était levée et interceptée par Next.js, affichant un écran d'erreur bloquant.
 - **Frontend (`api.ts`)** : Modification de la fonction `apiFetch`. Désormais, si la réponse de l'API est un statut `401`, la fonction initie la redirection `window.location.href` puis retourne une Promise qui ne se résout jamais (`return new Promise(() => {})`). Cela fige l'exécution de l'appel asynchrone, empêchant le code en aval de jeter des erreurs intempestives et garantissant une transition fluide vers la page de login.
+
+### 5. Refonte Complète de l'Interface Utilisateur (UI Overhaul)
+L'intégralité du design Frontend a été refaite pour correspondre aux maquettes générées par Stitch AI (Google Material Design).
+- **Thème CSS Global** : Mise à jour de `frontend/src/app/globals.css` avec les variables Tailwind v4 (`@theme inline`) incluant le nouveau système de couleurs (Primary, Surface Container, Tertiary, etc.), les espacements personnalisés (`--spacing-sidebar_width`), et les polices (Inter, JetBrains Mono).
+- **Icons & Fonts (CDN)** : Mise à jour de `layout.tsx` pour charger Google Fonts (Inter, JetBrains Mono) et Material Symbols Outlined directement depuis les CDN.
+- **Layout & Navigation** :
+  - Création de `components/layout/Header.tsx` (TopAppBar) intégrant un champ de recherche, des icônes d'actions et l'avatar utilisateur.
+  - Réécriture de `components/layout/Sidebar.tsx` (SideNavBar) avec les nouveaux liens et indicateurs visuels du menu actif (utilisation de `usePathname`).
+  - Le `RootLayout` gère désormais la grille principale (Sidebar à gauche fixe, Header en haut, Main au centre).
+- **Dashboard (`app/dashboard/page.tsx`)** : Reconstruction avec des cartes de statistiques (Containers actifs, CPU, Images) et un tableau intégré des "Récents Containers".
+- **Containers (`app/containers/page.tsx`)** : Remplacement des cartes individuelles par une vue liste/tableau (Data Table) détaillée affichant les ID courts, images, statuts (pastilles colorées), et ports. Actions (Start, Stop, Delete, Logs) en fin de ligne.
+- **Images (`app/images/page.tsx`)** : Nouvelle disposition en tableau avec une carte distincte (Widget Bento) en haut pour le "Pull Remote Image" qui simplifie le téléchargement d'images.
+- **Volumes (`app/volumes/page.tsx`)** : Transition vers un tableau. L'interface de création d'un volume n'est plus une modale mais un formulaire en accordéon (inline form) s'affichant au clic.
+- **Unified Logs (`app/logs/page.tsx`)** : Création d'une vraie page pleine au lieu d'une modale. Sélection d'un container via `<select>` pour "streamer" les logs dans un terminal simulé (`bg-[#1A1C1E]`).
+- **Create Container (`app/containers/create/page.tsx`)** : Conversion de l'ancienne modale de déploiement en une page dédiée (full page route). Formulaire structuré en 3 sections (General, Port Mapping, Volumes) avec redirection propre (`useRouter`) vers la liste après création. Suppression de `CreateContainerModal.tsx`.
