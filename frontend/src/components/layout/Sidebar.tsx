@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { 
   LayoutDashboard, 
   Box, 
@@ -28,6 +28,12 @@ const navItems = [
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const router = useRouter();
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    router.push("/login");
+  };
 
   return (
     <aside className="fixed left-0 top-0 z-40 h-screen w-64 glass border-r border-white/10 flex flex-col">
@@ -62,7 +68,9 @@ export default function Sidebar() {
       </nav>
 
       <div className="p-4 mt-auto border-t border-white/10">
-        <button className="flex items-center gap-3 px-4 py-3 w-full rounded-xl text-zinc-400 hover:text-rose-400 hover:bg-rose-500/10 transition-colors group">
+        <button 
+          onClick={handleLogout}
+          className="flex items-center gap-3 px-4 py-3 w-full rounded-xl text-zinc-400 hover:text-rose-400 hover:bg-rose-500/10 transition-colors group">
           <LogOut className="w-5 h-5 group-hover:rotate-12 transition-transform" />
           <span className="font-medium">Logout</span>
         </button>
