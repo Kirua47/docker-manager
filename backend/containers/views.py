@@ -111,10 +111,9 @@ class ContainerViewSet(viewsets.ViewSet):
         client = self.get_client()
         try:
             container = client.containers.get(pk)
-            def stream_logs():
-                for line in container.logs(stream=True, follow=True):
-                    yield line
-            return StreamingHttpResponse(stream_logs(), content_type='text/plain')
+            logs_data = container.logs(tail=500)
+            from django.http import HttpResponse
+            return HttpResponse(logs_data, content_type='text/plain')
         except docker.errors.NotFound:
             return Response(status=status.HTTP_404_NOT_FOUND)
 

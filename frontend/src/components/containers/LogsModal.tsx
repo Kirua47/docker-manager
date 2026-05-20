@@ -4,12 +4,12 @@ import { X, Terminal as TerminalIcon, Copy, Download } from "lucide-react";
 
 interface LogsModalProps {
   containerName: string;
-  logs: string;
+  logs?: string;
   isOpen: boolean;
   onClose: () => void;
 }
 
-export default function LogsModal({ containerName, logs, isOpen, onClose }: LogsModalProps) {
+export default function LogsModal({ containerName, logs = "", isOpen, onClose }: LogsModalProps) {
   if (!isOpen) return null;
 
   const logLines = logs.split('\n');
